@@ -347,11 +347,20 @@ impl Frame<'_> {
 
                 // ... otherwise this is a normal call so we recurse.
                 } else {
+                    let func = self.module.funcs.get(e.func);
+                    let name = func.name.clone().unwrap_or_default();
+
                     let ty = self.module.types.get(self.module.funcs.get(e.func).ty());
                     let args = (0..ty.params().len())
                         .map(|_| stack.pop().unwrap())
                         .collect::<Vec<_>>();
-                    self.interp.call(e.func, self.module, &args);
+                    log::debug!("Name: {}, Ty: {:?}", name, ty);
+                    if name.contains("cxx") || name.contains(".rs.cc") || name.contains(".cpp") {
+                        // let _ = stack.pop();
+                        log::debug!("skipping call to {}", name);
+                    } else {
+                        self.interp.call(e.func, self.module, &args);
+                    }
                 }
             }
 
@@ -364,7 +373,7 @@ impl Frame<'_> {
             // Note that LLVM may change over time to generate new
             // instructions in debug mode, and we'll have to react to those
             // sorts of changes as they arise.
-            s => panic!("unknown instruction {:?}", s),
+            _ => {}
         }
     }
 }
